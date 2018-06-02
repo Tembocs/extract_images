@@ -2,8 +2,9 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::env;
+use std::io::{Error, ErrorKind};
 
-fn main() {
+fn main() -> Result<(), Error> {
     let home_dir = env::home_dir().expect("Could not fine home directory");
     let processed_image_dir = Path::new(home_dir.as_path())
                                 .join("Desktop/processed_backgrounds");
@@ -15,34 +16,56 @@ fn main() {
 
     println!("\n{}", decorator_string);
     println!("... working ...");
-    prepare_dir(&processed_image_dir);
-    rename(&processed_image_dir , &source_image_dir);
+
+    prepare_dir(&processed_image_dir)?;
+    rename(&processed_image_dir, &source_image_dir)?;
+
     println!("{}\n", decorator_string);
+    Ok(())
 }
 
-// TODO, consider a return type Result for error handling
-fn prepare_dir(output_dir: &Path) {
+fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
     if output_dir.exists() {
         println!("A previous directory exist, deleting ...");
 
-        fs::remove_dir_all(output_dir)
-                .expect("could not remove processed image directory");
+        match fs::remove_dir(output_dir) {
+            Ok(()) => Ok(()),
+            Err(some_error) => {
+                let input_error = Error::new(ErrorKind::Other,
+                            format!("Could not remove directory: {}.", some_error));
+                Err(input_error)
+            }
+        }
+    } else {
+        match fs::create_dir(output_dir) {
+            Ok(()) => Ok(()),
+            Err(some_error) => {
+                let input_error = Error::new(ErrorKind::Other,
+                            format!("Could not remove directory: {}.", some_error));
+                Err(input_error)
+            }
+        }
     }
-
-    std::fs::create_dir(output_dir)
-            .expect("could not create processed image directory");
 }
 
-// TODO, consider a return type Result for error handling
-fn rename(processed_dir: &Path, source_dir: &Path) {
+// TODO, adding more Result return in some parts of this function.
+fn rename(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
     let mut files_copied: u32 = 0;
 
     // This will be added at the end of each file name to differentiate one from the other
     let mut number = 1;
 
     // Get contents of a directory, source image directory
-    let source_dir_iter = source_dir.read_dir()
-                            .expect("Error: Could not iterate over directory.");
+    let source_dir_iter = match source_dir.read_dir() {
+        Ok(dir_iterator) => dir_iterator,
+        Err(some_error) => {
+            let read_error = Error::new(ErrorKind::Other,
+                        format!("Could not create directory iterator. {}.", some_error));
+
+            // Use return statement when the two match results have incompatible types.
+            return Err(read_error);
+        }
+    };
 
     for entry in source_dir_iter {
         let new_entry = entry.expect("Error: error in DirEntry analysis.");
@@ -63,4 +86,5 @@ fn rename(processed_dir: &Path, source_dir: &Path) {
     }
 
     println!("done, {} files copied.", files_copied);
+    Ok(())
 }
