@@ -19,6 +19,7 @@ fn main() -> Result<(), Error> {
     println!("\t... working ...");
 
     prepare_dir(&processed_image_dir)?;
+    println!("\t copying files ...");
     copy_files(&processed_image_dir, &source_image_dir)?;
 
     println!("{}\n", decorator_string);
@@ -31,8 +32,21 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
     if output_dir.exists() {
         println!("A previous directory exist, deleting ...");
 
-        match fs::remove_dir(output_dir) {
-            Ok(()) => Ok(()),
+        match fs::remove_dir_all(output_dir) {
+            Ok(()) => {
+                // Successful deleted the previous directory.
+                // Create a new directory.
+                match fs::create_dir(output_dir) {
+                    Ok(()) => Ok(()),
+                    Err(some_error) => {
+                        let input_error = Error::new(ErrorKind::Other,
+                                    format!("Could not create directory: {}.", some_error));
+                        Err(input_error)
+                    }
+                }
+            },
+
+            // Failed to deleting the existing directory
             Err(some_error) => {
                 let input_error = Error::new(ErrorKind::Other,
                             format!("Could not remove directory: {}.", some_error));
@@ -44,7 +58,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
             Ok(()) => Ok(()),
             Err(some_error) => {
                 let input_error = Error::new(ErrorKind::Other,
-                            format!("Could not remove directory: {}.", some_error));
+                            format!("Could not create directory: {}.", some_error));
                 Err(input_error)
             }
         }
@@ -92,6 +106,8 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
         }
     }
 
+    // TODO Consider return the number of copied files as part of result.
+    // TODO This will ensure this function is focused with one task.
     println!("\tdone, {} files copied.", files_copied);
     Ok(())
 }
