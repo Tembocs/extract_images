@@ -46,7 +46,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
                 }
             },
 
-            // Failed to deleting the existing directory
+            // Failed to delete the existing directory
             Err(some_error) => {
                 let input_error = Error::new(ErrorKind::Other,
                             format!("Could not remove directory: {}.", some_error));
@@ -67,6 +67,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 
 // TODO, adding more robust error checking in some parts of this function.
 // TODO, This function does two things, consider refactoring into two functions.
+/// Copy images files and rename them.
 fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
     let mut files_copied: u32 = 0;
 
@@ -82,7 +83,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
         }
     };
 
-    // This added at the end of each file name to differentiate one from another
+    // This is added at the end of each file name to differentiate one from another
     let mut number = 1;
 
     for entry in source_dir_iter {
