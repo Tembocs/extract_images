@@ -2,6 +2,7 @@
 name = "rn"
 version = "0.1.0"
 authors = ["Tembo <tembocs101@gmail.com>"]
+edition = "2018"
 
 [profile.dev]
 opt-level = 0

@@ -2,11 +2,11 @@
 use std::fs;
 use std::path::Path;
 use std::io::{Error, ErrorKind};
-extern crate dirs;
+use dirs::home_dir;
 
 /// Starting point.
 fn main() -> Result<(), Error> {
-    let home_dir = dirs::home_dir().expect("Could not find home directory");
+    let home_dir = home_dir().expect("Could not find home directory");
     let processed_image_dir = Path::new(home_dir.as_path())
                                 .join("Desktop/processed_backgrounds");
 
@@ -26,6 +26,7 @@ fn main() -> Result<(), Error> {
     Ok(())
 }
 
+
 /// Check if a previous directory with the same name exists, then delete it.
 /// Otherwise create a new one.
 fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
@@ -34,8 +35,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 
         match fs::remove_dir_all(output_dir) {
             Ok(()) => {
-                // Successful deleted the previous directory.
-                // Create a new directory.
+                // Successful deleted the previous directory, create a new one.
                 match fs::create_dir(output_dir) {
                     Ok(()) => Ok(()),
                     Err(some_error) => {
@@ -65,7 +65,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
     }
 }
 
-// TODO, adding more robust error checking in some parts of this function.
+
 // TODO, This function does two things, consider refactoring into two functions.
 /// Copy images files and rename them.
 fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
@@ -87,7 +87,14 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
     let mut number = 1;
 
     for entry in source_dir_iter {
-        let new_entry = entry.expect("Error: error in DirEntry analysis.");
+        let new_entry = match entry {
+            Ok(an_entry) => an_entry,
+            Err(entry_error) => {
+                let new_entry_error = Error::new(ErrorKind::Other,
+                            format!("Could not get directory entry. {}.", entry_error));
+                return Err(new_entry_error);
+            }
+        };
 
         // Set a new file name and set its path
         let name = new_entry.file_name()
