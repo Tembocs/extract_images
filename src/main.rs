@@ -4,6 +4,8 @@ use std::path::Path;
 use std::io::{Error, ErrorKind};
 use dirs::home_dir;
 
+
+// TODO Consider using termcolor crate for writing colored text on the console.
 /// Starting point.
 fn main() -> Result<(), Error> {
     let home_dir = home_dir().expect("Could not find home directory");
