@@ -22,7 +22,15 @@ fn main() -> Result<(), Error> {
 
     prepare_dir(&processed_image_dir)?;
     println!("\t copying files ...");
-    copy_files(&processed_image_dir, &source_image_dir)?;
+    
+    let copied_files = copy_files(&processed_image_dir, &source_image_dir)?;
+
+    match copied_files {
+        files_count => println!("\tdone, {} files copied.", files_count),
+
+        // TODO does not work as expected!
+        // Err(error_sms) => println!("Could not copy files: {}", error_sms)
+    }
 
     println!("{}\n", decorator_string);
     Ok(())
@@ -70,7 +78,7 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 
 // TODO, This function does two things, consider refactoring into two functions.
 /// Copy images files and rename them.
-fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
+fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
     let mut files_copied: u32 = 0;
 
     // Get contents of a directory, source image directory
@@ -98,7 +106,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
             }
         };
 
-        // Set a new file name and set its path
+        // Set a new file name and its path
         let name = new_entry.file_name()
                     .into_string().expect("failed conversion");
 
@@ -116,10 +124,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
         }
     }
 
-    // TODO Consider return the number of copied files as part of result.
-    // TODO This will ensure this function is focused with one task.
-    println!("\tdone, {} files copied.", files_copied);
-    Ok(())
+    Ok(files_copied)
 }
 
 /// Create a string for decoration.
