@@ -15,7 +15,7 @@ fn main() -> Result<(), Error> {
     let source_image_dir = Path::new(home_dir.as_path())
                                 .join("AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets");
 
-    let decorator_string: String = String::from("--------------------------------------------");
+    let decorator_string = decorator("-", 60);
 
     println!("\n{}", decorator_string);
     println!("\t... working ...");
@@ -120,4 +120,15 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<(), Error> {
     // TODO This will ensure this function is focused with one task.
     println!("\tdone, {} files copied.", files_copied);
     Ok(())
+}
+
+/// Create a string for decoration.
+fn decorator(symbol: &str, times: i32) -> String {
+    let mut deco = String::from("");
+
+    for _ in 0..times {
+        deco += &symbol;
+    }
+
+    return deco;
 }
