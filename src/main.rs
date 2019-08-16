@@ -5,7 +5,6 @@ use std::io::{Error, ErrorKind};
 use dirs::home_dir;
 
 
-// TODO Consider using termcolor crate for writing colored text on the console.
 /// Starting point.
 fn main() -> Result<(), Error> {
     let home_dir = home_dir().expect("Could not find home directory");
@@ -76,7 +75,6 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 }
 
 
-// TODO, This function does two things, consider refactoring into two functions.
 /// Copy images files and rename them.
 fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
     let mut files_copied: u32 = 0;
