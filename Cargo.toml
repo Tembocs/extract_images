@@ -11,4 +11,4 @@ opt-level = 0
 opt-level = 3
 
 [dependencies]
-dirs = "1.0.5"
+dirs = "4.0.0"
