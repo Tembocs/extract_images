@@ -76,8 +76,8 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 
 
 /// Copy images files and rename them.
-fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
-    let mut files_copied: u32 = 0;
+fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u16, Error> {
+    let mut files_copied: u16 = 0;
 
     // Get contents of a directory, source image directory
     let source_dir_iter = match source_dir.read_dir() {
@@ -91,8 +91,8 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
         }
     };
 
-    // This is added at the end of each file name to differentiate one from another
-    let mut number = 1;
+    // This is added at the end of each file name to differentiate one from another.
+    let mut number: u8 = 1;
 
     for entry in source_dir_iter {
         let new_entry = match entry {
@@ -104,7 +104,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
             }
         };
 
-        // Set a new file name and its path
+        // Set a new file name and its path.
         let name = new_entry.file_name()
                     .into_string().expect("failed conversion");
 
@@ -113,7 +113,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
         let source_path = source_dir.join(name);
         number += 1;
 
-        // Do the copying using the new file name and path
+        // Do the copying using the new file name and path.
         match fs::copy(&source_path, &new_path) {
             Ok(_) => {
                 files_copied += 1;
@@ -126,7 +126,7 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u32, Error> {
 }
 
 /// Create a string for decoration.
-fn decorator(symbol: &str, times: i32) -> String {
+fn decorator(symbol: &str, times: u8) -> String {
     let mut deco = String::from("");
 
     for _ in 0..times {
