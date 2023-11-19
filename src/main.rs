@@ -1,137 +1,97 @@
-// main.rs
+// Import necessary standard libraries and external crates
 use std::fs;
 use std::path::Path;
-use std::io::{Error, ErrorKind};
-use dirs::home_dir;
+use std::io::{self, Error, ErrorKind};
+use dirs::home_dir;  // For finding the home directory
+use term_size;      // For determining terminal size
 
+/// The main entry point of the application.
+/// It calls the `run_app` function and handles any errors that occur.
+fn main() {
+    match run_app() {
+        Ok(()) => println!("Application completed successfully."),
+        Err(e) => eprintln!("Application error: {}", e),
+    }
+}
 
-/// Starting point.
-fn main() -> Result<(), Error> {
-    let home_dir = home_dir().expect("Could not find home directory");
-    let processed_image_dir = Path::new(home_dir.as_path())
-                                .join("Desktop/processed_backgrounds");
+/// Encapsulates the main logic of the application.
+/// It prepares the directory, copies the files, and handles errors.
+fn run_app() -> Result<(), Error> {
+    // Retrieve the home directory or return an error if not found
+    let home_dir = home_dir().ok_or_else(|| Error::new(ErrorKind::NotFound, "Could not find home directory"))?;
 
-    let source_image_dir = Path::new(home_dir.as_path())
-                                .join("AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets");
+    // Define paths for the processed image directory and the source image directory
+    let processed_image_dir = home_dir.join("Desktop/processed_backgrounds");
+    let source_image_dir = home_dir.join("AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets");
 
-    let decorator_string = decorator("-", 60);
-
+    // Create a decorative string based on terminal size
+    let decorator_string = decorator("-");
     println!("\n{}", decorator_string);
     println!("\t... working ...");
 
+    // Prepare the directory for processed images
     prepare_dir(&processed_image_dir)?;
-    println!("\t copying files ...");
+    println!("\tCopying files ...");
     
+    // Copy files from the source directory to the processed directory
     let copied_files = copy_files(&processed_image_dir, &source_image_dir)?;
+    println!("\tDone, {} files copied.", copied_files);
 
-    match copied_files {
-        files_count => println!("\tdone, {} files copied.", files_count),
-
-        // TODO does not work as expected!
-        // Err(error_sms) => println!("Could not copy files: {}", error_sms)
-    }
-
+    // Print the decorative string again
     println!("{}\n", decorator_string);
     Ok(())
 }
 
-
-/// Check if a previous directory with the same name exists, then delete it.
-/// Otherwise create a new one.
+/// Prepares a directory for storing processed images.
+/// If the directory exists, it is deleted and recreated.
 fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
+    // Check if the directory already exists
     if output_dir.exists() {
-        println!("A previous directory exist, deleting ...");
-
-        match fs::remove_dir_all(output_dir) {
-            Ok(()) => {
-                // Successful deleted the previous directory, create a new one.
-                match fs::create_dir(output_dir) {
-                    Ok(()) => Ok(()),
-                    Err(some_error) => {
-                        let input_error = Error::new(ErrorKind::Other,
-                                    format!("Could not create directory: {}.", some_error));
-                        Err(input_error)
-                    }
-                }
-            },
-
-            // Failed to delete the existing directory
-            Err(some_error) => {
-                let input_error = Error::new(ErrorKind::Other,
-                            format!("Could not remove directory: {}.", some_error));
-                Err(input_error)
-            }
-        }
-    } else {
-        match fs::create_dir(output_dir) {
-            Ok(()) => Ok(()),
-            Err(some_error) => {
-                let input_error = Error::new(ErrorKind::Other,
-                            format!("Could not create directory: {}.", some_error));
-                Err(input_error)
-            }
-        }
+        println!("A previous directory exists, deleting ...");
+        fs::remove_dir_all(output_dir)?;
     }
+
+    // Create a new directory
+    fs::create_dir(output_dir).map_err(|e| {
+        Error::new(ErrorKind::Other, format!("Could not create directory: {}.", e))
+    })
 }
 
-
-/// Copy images files and rename them.
+/// Copies image files from the source directory to the processed directory.
+/// Renames the files during the copying process.
 fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u16, Error> {
     let mut files_copied: u16 = 0;
 
-    // Get contents of a directory, source image directory
-    let source_dir_iter = match source_dir.read_dir() {
-        Ok(dir_iterator) => dir_iterator,
-        Err(some_error) => {
-            let read_error = Error::new(ErrorKind::Other,
-                        format!("Could not create directory iterator. {}.", some_error));
+    // Read the source directory and handle any errors
+    let source_dir_iter = source_dir.read_dir()
+        .map_err(|e| Error::new(ErrorKind::Other, format!("Could not read source directory: {}.", e)))?;
 
-            // Use return statement when the two match results have incompatible types.
-            return Err(read_error);
-        }
-    };
-
-    // This is added at the end of each file name to differentiate one from another.
-    let mut number: u8 = 1;
-
+    // Iterate over the entries in the source directory
     for entry in source_dir_iter {
-        let new_entry = match entry {
-            Ok(an_entry) => an_entry,
-            Err(entry_error) => {
-                let new_entry_error = Error::new(ErrorKind::Other,
-                            format!("Could not get directory entry. {}.", entry_error));
-                return Err(new_entry_error);
-            }
-        };
+        let entry = entry.map_err(|e| Error::new(ErrorKind::Other, format!("Could not process directory entry: {}.", e)))?;
+        let file_name = entry.file_name().into_string().map_err(|_| io::Error::new(ErrorKind::InvalidData, "Filename is not valid UTF-8"))?;
+        let extension = Path::new(&file_name).extension().and_then(|s| s.to_str()).unwrap_or("jpg");
 
-        // Set a new file name and its path.
-        let name = new_entry.file_name()
-                    .into_string().expect("failed conversion");
-
-        let new_name = format!("image_{}.jpg", number);
+        let new_name = format!("image_{}.{}", files_copied + 1, extension);
         let new_path = processed_dir.join(new_name);
-        let source_path = source_dir.join(name);
-        number += 1;
+        let source_path = entry.path();
 
-        // Do the copying using the new file name and path.
-        match fs::copy(&source_path, &new_path) {
-            Ok(_) => {
-                files_copied += 1;
-            },
-            Err(_) => println!("could not copy '{:?}'", source_path)
-        }
+        // Copy the file from the source path to the new path
+        fs::copy(&source_path, &new_path).map_err(|_| {
+            Error::new(ErrorKind::Other, format!("Could not copy file from {:?} to {:?}", source_path, new_path))
+        })?;
+        files_copied += 1;
     }
 
     Ok(files_copied)
 }
 
-/// Create a string for decoration.
-fn decorator(symbol: &str, times: u8) -> String {
-    let mut deco = String::from("");
-
-    for _ in 0..times {
-        deco += &symbol;
-    }
-
-    return deco;
+/// Creates a decorative string based on the terminal size.
+/// Uses the given symbol to create a line that spans the width of the terminal.
+fn decorator(symbol: &str) -> String {
+    // Try to get the terminal width, default to 60 if unable to determine
+    let width = term_size::dimensions().map(|(w, _)| w).unwrap_or(60);
+    symbol.repeat(width)
 }
+
+// Rest of the code (if any) goes here
