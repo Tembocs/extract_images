@@ -12,3 +12,4 @@ opt-level = 3
 
 [dependencies]
 dirs = "4.0.0"
+term_size = "0.3.2"
