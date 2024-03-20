@@ -8,7 +8,6 @@ use term_size; // For determining terminal size
 /// The main entry point of the application.
 /// It calls the `run_app` function and handles any errors that occur.
 fn main() {
-    // Run the app
     match run_app() {
         Ok(()) => println!("Application completed successfully."),
         Err(e) => eprintln!("Application error: {}", e),
