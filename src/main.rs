@@ -1,13 +1,14 @@
 // Import necessary standard libraries and external crates
+use dirs::home_dir; // For finding the home directory
 use std::fs;
-use std::path::Path;
 use std::io::{self, Error, ErrorKind};
-use dirs::home_dir;  // For finding the home directory
-use term_size;      // For determining terminal size
+use std::path::Path;
+use term_size; // For determining terminal size
 
 /// The main entry point of the application.
 /// It calls the `run_app` function and handles any errors that occur.
 fn main() {
+    // Run the app
     match run_app() {
         Ok(()) => println!("Application completed successfully."),
         Err(e) => eprintln!("Application error: {}", e),
@@ -18,7 +19,8 @@ fn main() {
 /// It prepares the directory, copies the files, and handles errors.
 fn run_app() -> Result<(), Error> {
     // Retrieve the home directory or return an error if not found
-    let home_dir = home_dir().ok_or_else(|| Error::new(ErrorKind::NotFound, "Could not find home directory"))?;
+    let home_dir = home_dir()
+        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Could not find home directory"))?;
 
     // Define paths for the processed image directory and the source image directory
     let processed_image_dir = home_dir.join("Desktop/processed_backgrounds");
@@ -32,7 +34,7 @@ fn run_app() -> Result<(), Error> {
     // Prepare the directory for processed images
     prepare_dir(&processed_image_dir)?;
     println!("\tCopying files ...");
-    
+
     // Copy files from the source directory to the processed directory
     let copied_files = copy_files(&processed_image_dir, &source_image_dir)?;
     println!("\tDone, {} files copied.", copied_files);
@@ -53,7 +55,10 @@ fn prepare_dir(output_dir: &Path) -> Result<(), Error> {
 
     // Create a new directory
     fs::create_dir(output_dir).map_err(|e| {
-        Error::new(ErrorKind::Other, format!("Could not create directory: {}.", e))
+        Error::new(
+            ErrorKind::Other,
+            format!("Could not create directory: {}.", e),
+        )
     })
 }
 
@@ -63,14 +68,29 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u16, Error> {
     let mut files_copied: u16 = 0;
 
     // Read the source directory and handle any errors
-    let source_dir_iter = source_dir.read_dir()
-        .map_err(|e| Error::new(ErrorKind::Other, format!("Could not read source directory: {}.", e)))?;
+    let source_dir_iter = source_dir.read_dir().map_err(|e| {
+        Error::new(
+            ErrorKind::Other,
+            format!("Could not read source directory: {}.", e),
+        )
+    })?;
 
     // Iterate over the entries in the source directory
     for entry in source_dir_iter {
-        let entry = entry.map_err(|e| Error::new(ErrorKind::Other, format!("Could not process directory entry: {}.", e)))?;
-        let file_name = entry.file_name().into_string().map_err(|_| io::Error::new(ErrorKind::InvalidData, "Filename is not valid UTF-8"))?;
-        let extension = Path::new(&file_name).extension().and_then(|s| s.to_str()).unwrap_or("jpg");
+        let entry = entry.map_err(|e| {
+            Error::new(
+                ErrorKind::Other,
+                format!("Could not process directory entry: {}.", e),
+            )
+        })?;
+        let file_name = entry
+            .file_name()
+            .into_string()
+            .map_err(|_| io::Error::new(ErrorKind::InvalidData, "Filename is not valid UTF-8"))?;
+        let extension = Path::new(&file_name)
+            .extension()
+            .and_then(|s| s.to_str())
+            .unwrap_or("jpg");
 
         let new_name = format!("image_{}.{}", files_copied + 1, extension);
         let new_path = processed_dir.join(new_name);
@@ -78,7 +98,13 @@ fn copy_files(processed_dir: &Path, source_dir: &Path) -> Result<u16, Error> {
 
         // Copy the file from the source path to the new path
         fs::copy(&source_path, &new_path).map_err(|_| {
-            Error::new(ErrorKind::Other, format!("Could not copy file from {:?} to {:?}", source_path, new_path))
+            Error::new(
+                ErrorKind::Other,
+                format!(
+                    "Could not copy file from {:?} to {:?}",
+                    source_path, new_path
+                ),
+            )
         })?;
         files_copied += 1;
     }
