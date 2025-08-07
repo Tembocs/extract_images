@@ -18,10 +18,11 @@ fn main() {
 /// This function performs the following steps:
 /// 1. Retrieves the home directory of the current user.
 /// 2. Constructs paths for the processed image directory and the source image directory.
-/// 3. Prints a decorator string and a working message.
-/// 4. Prepares the processed image directory by creating it if it doesn't exist.
-/// 5. Copies files from the source image directory to the processed image directory.
-/// 6. Prints the number of files copied and a completion message.
+/// 3. Validates that the source directory exists.
+/// 4. Prints a decorator string and a working message.
+/// 5. Prepares the processed image directory by creating it if it doesn't exist.
+/// 6. Copies files from the source image directory to the processed image directory.
+/// 7. Prints the number of files copied and a completion message.
 ///
 /// # Returns
 /// 
@@ -32,6 +33,7 @@ fn main() {
 ///
 /// This function will return an error if:
 /// - The home directory cannot be found.
+/// - The source directory doesn't exist.
 /// - There is an issue creating the processed image directory.
 /// - There is an issue copying the files.
 ///
@@ -49,15 +51,29 @@ fn run_app() -> Result<(), Error> {
     let processed_image_dir = home_dir.join("Desktop/processed_backgrounds");
     let source_image_dir = home_dir.join("AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets");
 
+    // Check if source directory exists
+    if !source_image_dir.exists() {
+        return Err(Error::new(
+            ErrorKind::NotFound, 
+            format!("Source directory not found: '{}'. This may indicate that Windows Content Delivery Manager is not enabled or you're not on Windows 10/11.", source_image_dir.display())
+        ));
+    }
+
     let decorator_string = decorator("-");
     println!("\n{}", decorator_string);
-    println!("\t... working ...");
+    println!("\t🖼️  Extracting Windows background images...");
 
     prepare_dir(&processed_image_dir)?;
-    println!("\tCopying files ...");
+    println!("\t📁 Created output directory: {}", processed_image_dir.display());
+    println!("\t🔄 Copying files...");
 
     let copied_files = copy_files(&processed_image_dir, &source_image_dir)?;
-    println!("\tDone, {} files copied.", copied_files);
+    
+    if copied_files == 0 {
+        println!("\t⚠️  No suitable image files found in source directory.");
+    } else {
+        println!("\t✅ Done! {} image(s) copied to Desktop/processed_backgrounds", copied_files);
+    }
 
     println!("{}\n", decorator_string);
     Ok(())
