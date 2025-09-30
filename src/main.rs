@@ -1,15 +1,24 @@
 mod utils;
 mod file_ops;
+mod config;
 
+use clap::Parser;
+use config::Config;
 use dirs::home_dir;
-use std::io::{Error, ErrorKind};
+use std::io::Error;
+use std::process;
 use utils::decorator;
 use file_ops::{prepare_dir, copy_files};
 
 fn main() {
-    match run_app() {
+    let config = Config::parse();
+    
+    match run_app(&config) {
         Ok(()) => println!("Application completed successfully."),
-        Err(e) => eprintln!("Application error: {}", e),
+        Err(e) => {
+            eprintln!("Application error: {}", e);
+            process::exit(1);
+        }
     }
 }
 
@@ -44,17 +53,18 @@ fn main() {
 ///     eprintln!("Application error: {}", e);
 /// }
 /// ```
-fn run_app() -> Result<(), Error> {
+fn run_app(config: &Config) -> Result<(), Error> {
     let home_dir = home_dir()
-        .ok_or_else(|| Error::new(ErrorKind::NotFound, "Could not find home directory"))?;
+        .ok_or_else(|| Error::other("Could not find home directory"))?;
 
-    let processed_image_dir = home_dir.join("Desktop/processed_backgrounds");
+    let processed_image_dir = config.output
+        .clone()
+        .unwrap_or_else(|| home_dir.join("Desktop/processed_backgrounds"));
     let source_image_dir = home_dir.join("AppData/Local/Packages/Microsoft.Windows.ContentDeliveryManager_cw5n1h2txyewy/LocalState/Assets");
 
     // Check if source directory exists
     if !source_image_dir.exists() {
-        return Err(Error::new(
-            ErrorKind::NotFound, 
+        return Err(Error::other(
             format!("Source directory not found: '{}'. This may indicate that Windows Content Delivery Manager is not enabled or you're not on Windows 10/11.", source_image_dir.display())
         ));
     }
@@ -67,7 +77,7 @@ fn run_app() -> Result<(), Error> {
     println!("\t📁 Created output directory: {}", processed_image_dir.display());
     println!("\t🔄 Copying files...");
 
-    let copied_files = copy_files(&processed_image_dir, &source_image_dir)?;
+    let copied_files = copy_files(&processed_image_dir, &source_image_dir, config)?;
     
     if copied_files == 0 {
         println!("\t⚠️  No suitable image files found in source directory.");

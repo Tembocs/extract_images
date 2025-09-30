@@ -29,6 +29,7 @@ cargo build --release
 
 ## Usage
 
+### Basic Usage
 Simply run the executable:
 ```bash
 cargo run --release
@@ -39,11 +40,35 @@ Or if you've built the binary:
 ./target/release/extract_images
 ```
 
-The program will:
-1. Check for existing `processed_backgrounds` folder on Desktop
+### Command Line Options
+```bash
+# Custom output directory
+extract_images --output "C:\MyWallpapers"
+
+# Set minimum file size (in KB)
+extract_images --min-size-kb 200
+
+# Use custom prefix for files
+extract_images --prefix "wallpaper"
+
+# Exclude certain file extensions
+extract_images --exclude-extensions "ico,bmp"
+
+# Verbose output
+extract_images --verbose
+
+# Dry run (see what would be copied without actually copying)
+extract_images --dry-run
+
+# Combine options
+extract_images --output "D:\Images" --prefix "bg" --min-size-kb 150 --verbose
+```
+
+### What it does:
+1. Check for existing output folder (default: `Desktop/processed_backgrounds`)
 2. Delete it if it exists (to ensure fresh extraction)
-3. Create a new `processed_backgrounds` folder
-4. Copy and rename all images from Windows assets directory
+3. Create a new output folder
+4. Copy and rename all qualifying images from Windows assets directory
 5. Display the number of files copied
 
 ## Output Location
